@@ -1,7 +1,7 @@
 from typing import List, Tuple, Union
 
 from transformers import (AutoTokenizer, PreTrainedTokenizer,
-                          PreTrainedTokenizerFast, LlamaTokenizer)
+                          PreTrainedTokenizerFast)
 
 from vllm.logger import init_logger
 
@@ -32,14 +32,11 @@ def get_tokenizer(
             f"using '{_FAST_LLAMA_TOKENIZER}' instead of the original "
             "tokenizer.")
     try:
-        if "llama" in tokenizer_name.lower() or "llava" in tokenizer_name.lower():
-            tokenizer = LlamaTokenizer.from_pretrained(tokenizer_name, *args, **kwargs)
-        else:
-            tokenizer = AutoTokenizer.from_pretrained(
-                tokenizer_name,
-                *args,
-                trust_remote_code=trust_remote_code,
-                **kwargs)
+        tokenizer = AutoTokenizer.from_pretrained(
+            tokenizer_name,
+            *args,
+            trust_remote_code=trust_remote_code,
+            **kwargs)
     except TypeError as e:
         # The LLaMA tokenizer causes a protobuf error in some environments.
         err_msg = (
@@ -75,7 +72,7 @@ def detokenize_incrementally(
     new_token_id: int,
     skip_special_tokens: bool,
 ) -> Tuple[str, str]:
-    """Detokenizes the new token in conjunction with the previous output tokens.
+    """Detokenizes the new token in conjuction with the previous output tokens.
 
     NOTE: This function does not update prev_output_tokens.
 

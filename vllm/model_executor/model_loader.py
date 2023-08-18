@@ -7,7 +7,6 @@ from transformers import PretrainedConfig
 
 from vllm.config import ModelConfig
 from vllm.model_executor.models import *  # pylint: disable=wildcard-import
-from vllm.model_executor.models.llava import LlavaLlamaForCausalLM
 from vllm.model_executor.weight_utils import initialize_dummy_weights
 
 # TODO(woosuk): Lazy-load the model classes.
@@ -23,7 +22,6 @@ _MODEL_REGISTRY = {
     "InternLMForCausalLM": InternLMForCausalLM,
     "LlamaForCausalLM": LlamaForCausalLM,
     "LLaMAForCausalLM": LlamaForCausalLM,  # For decapoda-research/llama-*
-    "LlavaLlamaForCausalLM": LlavaLlamaForCausalLM,
     "MPTForCausalLM": MPTForCausalLM,
     "OPTForCausalLM": OPTForCausalLM,
     "QWenLMHeadModel": QWenLMHeadModel,
@@ -41,13 +39,25 @@ def _get_model_architecture(config: PretrainedConfig) -> Type[nn.Module]:
         f"Supported architectures: {list(_MODEL_REGISTRY.keys())}")
 
 
+def _supports_quantization(model_class):
+    return model_class is LlamaForCausalLM
+
+
 def get_model(model_config: ModelConfig) -> nn.Module:
     model_class = _get_model_architecture(model_config.hf_config)
     torch.set_default_dtype(model_config.dtype)
 
     # Create a model instance.
     # The weights will be initialized as empty tensors.
-    model = model_class(model_config.hf_config)
+
+    if _supports_quantization(model_class):
+        model = model_class(
+            model_config.hf_config,
+            model_config.quantization_config
+        )
+    else:
+        model = model_class(model_config.hf_config)
+
     if model_config.use_dummy_weights:
         model = model.cuda()
         # NOTE(woosuk): For accurate performance evaluation, we assign
@@ -58,4 +68,5 @@ def get_model(model_config: ModelConfig) -> nn.Module:
         model.load_weights(model_config.model, model_config.download_dir,
                            model_config.use_np_weights)
         model = model.cuda()
+
     return model.eval()

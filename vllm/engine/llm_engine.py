@@ -78,6 +78,7 @@ class LLMEngine:
             f"download_dir={model_config.download_dir!r}, "
             f"use_np_weights={model_config.use_np_weights}, "
             f"tensor_parallel_size={parallel_config.tensor_parallel_size}, "
+            f"quantization_method={model_config.get_quantization_method()}, "
             f"seed={model_config.seed})")
         # TODO(woosuk): Print more configs in debug mode.
 
